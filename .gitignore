@@ -1,0 +1,4 @@
+.env
+venv/
+__pycache__/
+weather_api_response_files/
