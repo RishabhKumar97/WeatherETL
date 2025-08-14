@@ -94,50 +94,11 @@ def get_weather_data_and_write_to_csv(geo_codes_df: pd.DataFrame,path_to_respons
         # Write to CSV, include header only if the file doesn't exist
         df_weather_data_select_cols.to_csv(f'{full_path}weather_data_{name.lower()}.csv', sep= '|', index= False, mode = 'a', header= not(os.path.isfile(f'{full_path}weather_data_{name.lower()}.csv')))
         path_to_data.append(f'{full_path}weather_data_{name.lower()}.csv')
-
-def get_transformed_data(path_to_data:str)->pd.DataFrame:
-    select_cols = ['coord_lon', 'coord_lat', 'weather_0_main', 'weather_0_description', 'main_temp','main_feels_like','main_temp_min','main_temp_max'\
-            ,'main_pressure','main_humidity','main_sea_level','main_grnd_level','visibility','wind_speed','wind_deg','wind_gust','clouds_all'\
-            , 'dt','sys_country','sys_sunrise','sys_sunset','timezone','name']
-    unix_time_cols = ['dt','sys_sunrise','sys_sunset']
-    local_time_cols = ['dt_local','sys_sunrise_local','sys_sunset_local']
-    col_rep_shift_utc = ['timezone']
-    df = pd.read_csv(path_to_data, usecols= select_cols, delimiter= '|')
-    df.drop_duplicates(subset = ['dt'], keep= 'last', inplace= True, ignore_index= True)
-    #local time
-    for i in range(0,3):
-        df[local_time_cols[i]] = df[unix_time_cols[i]] + df[col_rep_shift_utc[0]]
-        df[local_time_cols[i]] = pd.to_datetime(df[local_time_cols[i]], unit= 's')
-    #UTC time
-    for c in unix_time_cols:
-        df[c+"_utc"] = pd.to_datetime(df[c], unit= 's')
-    df['state'] = (path_to_data.split('weather_api_response_files')[1]).split(os.sep)[2]
-    # df['etl_timestamp'] = pd.Timestamp.now()
-    # df['location'] = (((path_to_data.split('weather_api_response_files')[1]).split(os.sep)[3]).split("_")[2]).split(".")[0]
-    df.drop(columns= unix_time_cols, axis=1, inplace=True)
-    df.drop(columns= ['timezone'], axis=1, inplace=True)
-    return df
             
 @dag
 def weather_etl_dag():
-
-    # @task
-    # def set_vars():
-    #     # read cfg.ini file and get locations
-        # cfg_ini_file_path = os.path.join(os.path.dirname(os.getcwd()), f'config{os.sep}cfg.ini')
-        # print("cfg_ini_file_path: ",  cfg_ini_file_path)
-        # config = configparser.ConfigParser(allow_no_value=True)
-        # config.read(cfg_ini_file_path)
-        # locations = config.options('Locations')
-    #     Variable.set(key= "locations", value= locations)
-        # path_to_response_file_directory = os.path.join(os.path.dirname(os.getcwd()), f"weather_api_response_files{os.sep}")
-        # print("path_to_response_file_directory: ", path_to_response_file_directory)
-    #     Variable.set(key= "path_to_response_file_directory", value= path_to_response_file_directory)
-
     @task
     def get_geo_codes():
-        # locations = Variable.get(key= "locations", deserialize_json= False)
-        # cfg_ini_file_path = os.path.join(os.path.dirname(os.getcwd()), f'config{os.sep}cfg.ini')
         cfg_ini_file_path = f'config{os.sep}cfg.ini'
         print("cfg_ini_file_path: ",  cfg_ini_file_path)
         config = configparser.ConfigParser(allow_no_value=True)
@@ -149,8 +110,6 @@ def weather_etl_dag():
     
     @task
     def write_weather_data_for_geo_codes_to_csv(geo_codes_df):
-        # path_to_response_file_directory = Variable.get(key= "path_to_response_file_directory", deserialize_json= False)
-        # path_to_response_file_directory = os.path.join(os.path.dirname(os.getcwd()), f"weather_api_response_files{os.sep}")
         path_to_response_file_directory = f"weather_api_response_files{os.sep}"
         print("path_to_response_file_directory: ", path_to_response_file_directory)
         get_weather_data_and_write_to_csv(geo_codes_df, path_to_response_file_directory)
@@ -160,18 +119,3 @@ def weather_etl_dag():
  
 
 weather_etl_dag()
-
-# if(__name__ == "__main__"):
-    # API_KEY = get_open_weather_map_api_key(path_to_api_key) 
-        # path_to_data = get_weather_data_and_write_to_csv(geo_codes_df)
-#     # conn = conn_to_postgres_db('weather_data_db')
-#     # push_to_postgres_db(conn)
-    
-
-
-#     # s3_client = boto3.client('s3')
-#     # Bucket = boto3.resource('s3').Bucket("xyz-a8cf379f-3db9-4fe4-a9d6-1e169a3d9353")
-#     # bulk_load_raw_to_s3(path_to_response_file_directory, Bucket)
-#     # print(check_bucket_exists("xyz-a8cf379f-3db9-4fe4-a9d6-1e169a3d9353", s3_client))
-#     # # print((s3_client.list_buckets()))
-#     # print(path_to_response_file_directory)
